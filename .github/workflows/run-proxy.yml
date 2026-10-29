@@ -1,0 +1,36 @@
+name: PS3 Web Proxy Engine
+
+on:
+  push:
+    paths:
+      - 'config.json'
+  workflow_dispatch:
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Kodu Klonla
+      uses: actions/checkout@v4
+
+    - name: Node.js Kur
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+
+    - name: Chromium ve Bagimliliklari Yukle
+      run: |
+        npm install
+        npx puppeteer browsers install chrome
+
+    - name: Motoru Calistir
+      run: node scraper.js
+
+    - name: Sonuclari Sayfaya Kaydet
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add config.json page_screenshot.png
+        git commit -m "PS3 Proxy: Sayfa Gorunumu Yenilendi" || exit 0
+        git push

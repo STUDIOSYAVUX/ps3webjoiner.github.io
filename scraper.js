@@ -1,12 +1,17 @@
 const puppeteer = require('puppeteer');
 const cheerio = require('cheerio');
 const fs = require('fs');
+const path = require('path');
 
 async function run() {
-    const config = JSON.parse(fs.readFileSync('config.json', 'utf8'));
+    // Config dosyasının tam ana dizin yolunu buluyoruz
+    const configPath = path.join(__dirname, 'config.json');
+    const screenshotPath = path.join(__dirname, 'page_screenshot.png');
+
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
     const targetUrl = config.target_url;
 
-    console.log(`Siteye gidiliyor: ${targetUrl}`);
+    console.log(`Hedef siteye gidiliyor: ${targetUrl}`);
 
     const browser = await puppeteer.launch({ 
         headless: true,
@@ -14,33 +19,18 @@ async function run() {
     });
     
     const page = await browser.newPage();
-    // PS3 ekran genişliği
     await page.setViewport({ width: 1024, height: 768 }); 
 
     try {
-        // Sayfanın tamamen yüklenmesi için networkidle0 kullandık (Tüm scriptler ve görseller bitsin diye)
         await page.goto(targetUrl, { waitUntil: 'networkidle0', timeout: 60000 });
         
-        // PS3 uyumluluğu için biraz bekleyelim sayfa tam otursun
-        await page.waitForTimeout(2000);
+        // Sayfanın render süresi için kısa bir mola
+        await page.waitForTimeout(3000);
 
         const html = await page.content();
         const $ = cheerio.load(html);
 
-        // Video Ayıklama
-        const foundVideos = [];
-        $('video').each((i, el) => {
-            const src = $(el).find('source').attr('src') || $(el).attr('src');
-            if (src) foundVideos.push(src);
-        });
-        $('iframe').each((i, el) => {
-            const src = $(el).attr('src');
-            if (src && (src.includes('video') || src.includes('embed') || src.includes('player') || src.includes('stream'))) {
-                foundVideos.push(src);
-            }
-        });
-
-        // Link Koordinatları
+        // Link Koordinatları Ayıklama
         const linkCoordinates = await page.evaluate(() => {
             return Array.from(document.querySelectorAll('a')).map(link => {
                 const rect = link.getBoundingClientRect();
@@ -54,20 +44,19 @@ async function run() {
             }).filter(l => (l.right - l.left) > 0 && (l.bottom - l.top) > 0);
         });
 
-        // Kırık görseli engellemek için PNG formatında net screenshot alıyoruz
-        await page.screenshot({ path: 'page_screenshot.png', type: 'png' });
+        // Görseli tam olarak projenin ana dizinine (root) PNG formatında mühürlüyoruz
+        await page.screenshot({ path: screenshotPath, type: 'png' });
 
-        // config.json güncelleme
+        // Verileri config dosyasına geri işleme
         config.status = "ready";
         config.current_url = targetUrl;
-        config.videos = foundVideos;
         config.links = linkCoordinates;
-        fs.writeFileSync('config.json', JSON.stringify(config, null, 2));
+        fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 
-        console.log("Sistem basariyla ekran goruntusunu (PNG) kaydetti.");
+        console.log("Ekran goruntusu ana dizine basariyla png olarak kaydedildi.");
 
     } catch (error) {
-        console.error("Hata olustu:", error.message);
+        console.error("Hata meydana geldi:", error.message);
     } finally {
         await browser.close();
     }

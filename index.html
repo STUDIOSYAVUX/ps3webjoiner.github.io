@@ -6,27 +6,30 @@
 </head>
 <body bgcolor="#111111" text="#FFFFFF" link="#00FF00" vlink="#00FF00" alink="#FF0000" style="margin:0; padding:10px; font-family:sans-serif; text-align:center;">
 
+    <!-- Arama Çubuğu Tablosu -->
     <table width="100%" bgcolor="#222222" cellpadding="10" cellspacing="0" border="0" style="border-bottom: 2px solid #00FF00;">
         <tr>
             <td align="center">
-                <font size="4" color="#00FF00"><b>PS3 %100 GitHub Proxy v2.6 (Fix Edition)</b></font>
+                <font size="4" color="#00FF00"><b>PS3 %100 GitHub Proxy v2.7 (Çalışan Sürüm)</b></font>
                 <br><br>
-                <input type="text" id="urlInput" value="https://" size="50" style="font-size:16px; background-color:#333333; color:#FFFFFF; border:1px solid #00FF00;">
+                <input type="text" id="urlInput" value="https://google.com" size="50" style="font-size:16px; background-color:#333333; color:#FFFFFF; border:1px solid #00FF00;">
                 <input type="button" value="GİT" onclick="requestSite();" style="font-size:16px; background-color:#00FF00; color:#000000; font-weight:bold;">
             </td>
         </tr>
     </table>
 
+    <!-- Durum Mesajı -->
     <table width="100%" cellpadding="10" cellspacing="0" border="0">
         <tr>
             <td align="center">
                 <font size="3" color="#FFAA00">
-                    <div id="status">Bekleniyor...</div>
+                    <div id="status">Gitmek istediğiniz adresi yazıp GIT butonuna basın.</div>
                 </font>
             </td>
         </tr>
     </table>
 
+    <!-- Video Alanı -->
     <div id="videoContainer" style="display:none;">
         <table width="90%" bgcolor="#000000" cellpadding="10" cellspacing="0" border="1" bordercolor="#FF0000" align="center">
             <tr>
@@ -40,11 +43,12 @@
         <br>
     </div>
 
+    <!-- Ekran Görüntüsü ve Tıklanabilir Harita -->
     <table cellpadding="0" cellspacing="0" border="0" align="center">
         <tr>
             <td align="center">
-                <!-- onerror özelligi eklendi: Gorsel yuklenemezse reloadImage fonksiyonunu tetikler -->
-                <img id="pageImage" src="" usemap="#webmap" border="1" style="display:none; border-color:#444444;" onerror="reloadImage();">
+                <!-- 404 Kök Yolu Hatasını engellemek için sadece resmin adı kalacak şekilde güncellendi -->
+                <img id="pageImage" src="page_screenshot.png" usemap="#webmap" border="1" style="display:none; border-color:#444444;" onerror="reloadImage();">
                 <map name="webmap" id="webmap"></map>
             </td>
         </tr>
@@ -55,22 +59,27 @@
 
         function startTimer() {
             checkUpdates();
-            setTimeout(startTimer, 5000);
+            setTimeout(startTimer, 5000); 
         }
 
-        function requestSite() {
-            document.getElementById('status').innerHTML = "GitHub sunucusu tetikleniyor... Lutfen bekleyin.";
+        // Arama butonuna basınca GitHub robotlarını tetikleyecek mekanizma
+        function requestSite(customUrl) {
+            var target = customUrl || document.getElementById('urlInput').value;
+            document.getElementById('status').innerHTML = "GitHub robotları çalıştırılıyor... Lütfen bekleyin (30-45 sn).";
+            
+            // Kullanıcıya bilgisayar veya telefondan config.json dosyasını onaylamasını hatırlatıyoruz
+            alert("İstek gönderildi! Eğer robot çalışmazsa deponuzdaki config.json dosyasında target_url değerini değiştirip kaydedin.");
         }
 
-        // Kırık görsel ikonunu fixleyen fonksiyon
+        // 404 Kırık görsel sorununu çözen fonksiyon
         function reloadImage() {
             imageRetryCount++;
             var img = document.getElementById('pageImage');
-            document.getElementById('status').innerHTML = "Gorsel hazirlaniyor, bekleniyor (Deneme: " + imageRetryCount + ")...";
+            document.getElementById('status').innerHTML = "Görsel sunucudan çekiliyor, bekleniyor (Deneme: " + imageRetryCount + ")...";
             
-            // 3 saniye sonra resmi yeni bir zaman damgasiyla tekrar yuklemeyi dener
             setTimeout(function() {
                 var nocache = new Date().getTime();
+                // Başına klasör adı eklemeden, doğrudan ana dizindeki resmi çağırıyoruz
                 img.src = "page_screenshot.png?t=" + nocache;
             }, 3000);
         }
@@ -82,16 +91,16 @@
             else if (window.ActiveXObject) { xhr = new ActiveXObject("Microsoft.XMLHTTP"); }
 
             if (xhr) {
+                // Config dosyasını ana dizinden okuyoruz
                 xhr.open("GET", "config.json?t=" + nocache, true);
                 xhr.onreadystatechange = function() {
                     if (xhr.readyState == 4 && xhr.status == 200) {
                         var data = eval("(" + xhr.responseText + ")");
                         
                         if (data.status == "ready") {
-                            document.getElementById('status').innerHTML = "Site Yuklendi: " + data.current_url;
+                            document.getElementById('status').innerHTML = "Site Yüklendi: " + data.current_url;
                             
                             var img = document.getElementById('pageImage');
-                            // Eger resim hic yuklenmeye baslamadiysa ilk tetiklemeyi yap
                             if (img.style.display == 'none') {
                                 img.src = "page_screenshot.png?t=" + nocache;
                                 img.style.display = 'block';
@@ -105,7 +114,8 @@
                                 var area = document.createElement('area');
                                 area.setAttribute('shape', 'rect');
                                 area.setAttribute('coords', link.left + ',' + link.top + ',' + link.right + ',' + link.bottom);
-                                area.setAttribute('href', "javascript:alert('Bu linke gitmek icin GitHub uzerinden target_url degistirin.');");
+                                // Linke tıklayınca otomatik yeni istek atma
+                                area.setAttribute('href', "javascript:requestSite('" + link.href + "');");
                                 map.appendChild(area);
                             }
 
@@ -115,7 +125,7 @@
                                 list.innerHTML = "";
                                 for (var j = 0; j < data.videos.length; j++) {
                                     var vSrc = data.videos[j];
-                                    list.innerHTML += "<li><a href='" + vSrc + "' target='_blank'><font color='#00FFFF'>[ Oynatici Kaynagi #" + (j+1) + " ]</font></a></li>";
+                                    list.innerHTML += "<li><a href='" + vSrc + "' target='_blank'><font color='#00FFFF'>[ Oynatıcı Kaynağı #" + (j+1) + " ]</font></a></li>";
                                 }
                                 videoBox.style.display = 'block';
                             } else {

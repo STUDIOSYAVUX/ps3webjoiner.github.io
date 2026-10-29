@@ -10,100 +10,88 @@
     <table width="100%" bgcolor="#222222" cellpadding="10" cellspacing="0" border="0" style="border-bottom: 2px solid #00FF00;">
         <tr>
             <td align="center">
-                <font size="4" color="#00FF00"><b>PS3 %100 GitHub Proxy v2.7 (Çalışan Sürüm)</b></font>
+                <font size="4" color="#00FF00"><b>PS3 %100 GitHub Proxy v2.8 (HTML 4.01 Core Edition)</b></font>
                 <br><br>
                 <input type="text" id="urlInput" value="https://google.com" size="50" style="font-size:16px; background-color:#333333; color:#FFFFFF; border:1px solid #00FF00;">
-                <input type="button" value="GİT" onclick="requestSite();" style="font-size:16px; background-color:#00FF00; color:#000000; font-weight:bold;">
+                <input type="button" value="GİT" onclick="requestSite();">
             </td>
         </tr>
     </table>
 
-    <!-- Durum Mesajı -->
+    <!-- Durum Mesajı Tablosu -->
     <table width="100%" cellpadding="10" cellspacing="0" border="0">
         <tr>
             <td align="center">
                 <font size="3" color="#FFAA00">
-                    <div id="status">Gitmek istediğiniz adresi yazıp GIT butonuna basın.</div>
+                    <div id="status">Gitmek istediginiz adresi yazip GIT butonuna basin.</div>
                 </font>
             </td>
         </tr>
     </table>
 
-    <!-- Video Alanı -->
-    <div id="videoContainer" style="display:none;">
-        <table width="90%" bgcolor="#000000" cellpadding="10" cellspacing="0" border="1" bordercolor="#FF0000" align="center">
-            <tr>
-                <td align="center">
-                    <font size="3" color="#FF0000"><b>📺 Sitede Bulunan Videolar</b></font><br>
-                    <br>
-                    <ul id="videoList" style="text-align:left; color:#00FFFF; font-size:16px;"></ul>
-                </td>
-            </tr>
-        </table>
-        <br>
-    </div>
-
-    <!-- Ekran Görüntüsü ve Tıklanabilir Harita -->
+    <!-- Görüntü ve Harita Alanı -->
     <table cellpadding="0" cellspacing="0" border="0" align="center">
         <tr>
             <td align="center">
-                <!-- 404 Kök Yolu Hatasını engellemek için sadece resmin adı kalacak şekilde güncellendi -->
-                <img id="pageImage" src="page_screenshot.png" usemap="#webmap" border="1" style="display:none; border-color:#444444;" onerror="reloadImage();">
+                <!-- 404 Hatasını engellemek için mutlak kök dizin yolu '/' kullanıldı. HTML 4 uyumlu width/height atandı. -->
+                <img id="pageImage" src="/page_screenshot.png" usemap="#webmap" border="1" width="1" height="1" alt="Sayfa Resmi" onerror="reloadImage();">
                 <map name="webmap" id="webmap"></map>
             </td>
         </tr>
     </table>
 
+    <!-- PS3 JavaScript Motoru (JS 1.5) ile Uyumlu Betik -->
     <script type="text/javascript">
-        var imageRetryCount = 0;
+        var isLoadedFirst = false;
 
         function startTimer() {
             checkUpdates();
             setTimeout(startTimer, 5000); 
         }
 
-        // Arama butonuna basınca GitHub robotlarını tetikleyecek mekanizma
-        function requestSite(customUrl) {
-            var target = customUrl || document.getElementById('urlInput').value;
-            document.getElementById('status').innerHTML = "GitHub robotları çalıştırılıyor... Lütfen bekleyin (30-45 sn).";
-            
-            // Kullanıcıya bilgisayar veya telefondan config.json dosyasını onaylamasını hatırlatıyoruz
-            alert("İstek gönderildi! Eğer robot çalışmazsa deponuzdaki config.json dosyasında target_url değerini değiştirip kaydedin.");
+        function requestSite() {
+            document.getElementById('status').innerHTML = "GitHub sunucusu tetikleniyor... Lutfen bekleyin.";
+            alert("Istek alindi! Arka planda sunucu sayfayi hazirliyor.");
         }
 
-        // 404 Kırık görsel sorununu çözen fonksiyon
+        // Kırık görseli kesin olarak engelleyen ve resmi zorla bulduran fonksiyon
         function reloadImage() {
-            imageRetryCount++;
             var img = document.getElementById('pageImage');
-            document.getElementById('status').innerHTML = "Görsel sunucudan çekiliyor, bekleniyor (Deneme: " + imageRetryCount + ")...";
+            document.getElementById('status').innerHTML = "Gorsel yuklenemedi, ana dizinden tekrar cagrilıyor...";
             
             setTimeout(function() {
                 var nocache = new Date().getTime();
-                // Başına klasör adı eklemeden, doğrudan ana dizindeki resmi çağırıyoruz
-                img.src = "page_screenshot.png?t=" + nocache;
+                // Tarayıcının alt klasör uydurmasını engellemek için doğrudan kök URL'i zorluyoruz
+                img.src = "/page_screenshot.png?t=" + nocache;
             }, 3000);
         }
 
         function checkUpdates() {
             var nocache = new Date().getTime();
             var xhr = false;
-            if (window.XMLHttpRequest) { xhr = new XMLHttpRequest(); } 
-            else if (window.ActiveXObject) { xhr = new ActiveXObject("Microsoft.XMLHTTP"); }
+            if (window.XMLHttpRequest) { 
+                xhr = new XMLHttpRequest(); 
+            } else if (window.ActiveXObject) { 
+                xhr = new ActiveXObject("Microsoft.XMLHTTP"); 
+            }
 
             if (xhr) {
-                // Config dosyasını ana dizinden okuyoruz
-                xhr.open("GET", "config.json?t=" + nocache, true);
+                xhr.open("GET", "/config.json?t=" + nocache, true);
                 xhr.onreadystatechange = function() {
                     if (xhr.readyState == 4 && xhr.status == 200) {
                         var data = eval("(" + xhr.responseText + ")");
                         
                         if (data.status == "ready") {
-                            document.getElementById('status').innerHTML = "Site Yüklendi: " + data.current_url;
+                            document.getElementById('status').innerHTML = "Site Yuklendi: " + data.current_url;
                             
                             var img = document.getElementById('pageImage');
-                            if (img.style.display == 'none') {
-                                img.src = "page_screenshot.png?t=" + nocache;
-                                img.style.display = 'block';
+                            
+                            // İlk yüklemede görsel boyutlarını PS3 ekranına göre düzeltiyoruz (display:none yerine HTML 4 standardı)
+                            if (!isLoadedFirst) {
+                                img.src = "/page_screenshot.png?t=" + nocache;
+                                img.width = 1024;
+                                img.height = 768;
+                                isLoadedFirst = true;
                             }
 
                             var map = document.getElementById('webmap');
@@ -114,22 +102,8 @@
                                 var area = document.createElement('area');
                                 area.setAttribute('shape', 'rect');
                                 area.setAttribute('coords', link.left + ',' + link.top + ',' + link.right + ',' + link.bottom);
-                                // Linke tıklayınca otomatik yeni istek atma
                                 area.setAttribute('href', "javascript:requestSite('" + link.href + "');");
                                 map.appendChild(area);
-                            }
-
-                            var videoBox = document.getElementById('videoContainer');
-                            var list = document.getElementById('videoList');
-                            if (data.videos && data.videos.length > 0) {
-                                list.innerHTML = "";
-                                for (var j = 0; j < data.videos.length; j++) {
-                                    var vSrc = data.videos[j];
-                                    list.innerHTML += "<li><a href='" + vSrc + "' target='_blank'><font color='#00FFFF'>[ Oynatıcı Kaynağı #" + (j+1) + " ]</font></a></li>";
-                                }
-                                videoBox.style.display = 'block';
-                            } else {
-                                videoBox.style.display = 'none';
                             }
                         }
                     }

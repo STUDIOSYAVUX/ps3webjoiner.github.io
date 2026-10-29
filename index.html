@@ -1,0 +1,129 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://w3.org">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>PS3 Evrensel Web Proxy</title>
+</head>
+<body bgcolor="#111111" text="#FFFFFF" link="#00FF00" vlink="#00FF00" alink="#FF0000" style="margin:0; padding:10px; font-family:sans-serif; text-align:center;">
+
+    <!-- Arama Çubuğu Tablosu -->
+    <table width="100%" bgcolor="#222222" cellpadding="10" cellspacing="0" border="0" style="border-bottom: 2px solid #00FF00;">
+        <tr>
+            <td align="center">
+                <font size="4" color="#00FF00"><b>PS3 %100 GitHub Proxy v2.5 (Sony Edition)</b></font>
+                <br><br>
+                <input type="text" id="urlInput" value="https://" size="50" style="font-size:16px; background-color:#333333; color:#FFFFFF; border:1px solid #00FF00;">
+                <input type="button" value="GİT" onclick="requestSite();" style="font-size:16px; background-color:#00FF00; color:#000000; font-weight:bold;">
+            </td>
+        </tr>
+    </table>
+
+    <!-- Durum Mesajı -->
+    <table width="100%" cellpadding="10" cellspacing="0" border="0">
+        <tr>
+            <td align="center">
+                <font size="3" color="#FFAA00">
+                    <div id="status">Gitmek istediginiz adresi yazip GIT butonuna basin.</div>
+                </font>
+            </td>
+        </tr>
+    </table>
+
+    <!-- Video Alanı -->
+    <div id="videoContainer" style="display:none;">
+        <table width="90%" bgcolor="#000000" cellpadding="10" cellspacing="0" border="1" bordercolor="#FF0000" align="center">
+            <tr>
+                <td align="center">
+                    <font size="3" color="#FF0000"><b>📺 Sitede Bulunan Videolar</b></font><br>
+                    <font size="2" color="#00FFFF">PS3 ana oynaticisinda acmak icin linklere tiklayin:</font>
+                    <br><br>
+                    <ul id="videoList" style="text-align:left; color:#00FFFF; font-size:16px;">
+                        <!-- Videolar script ile buraya dolacak -->
+                    </ul>
+                </td>
+            </tr>
+        </table>
+        <br>
+    </div>
+
+    <!-- Ekran Görüntüsü ve Tıklanabilir Harita -->
+    <table cellpadding="0" cellspacing="0" border="0" align="center">
+        <tr>
+            <td align="center">
+                <img id="pageImage" src="" usemap="#webmap" border="1" style="display:none; border-color:#444444;">
+                <map name="webmap" id="webmap"></map>
+            </td>
+        </tr>
+    </table>
+
+    <!-- PS3 JS Motoru ile Tam Uyumlu Betik -->
+    <script type="text/javascript">
+        function startTimer() {
+            checkUpdates();
+            setTimeout(startTimer, 4000); // 4 saniyede bir config.json dosyasını kontrol eder
+        }
+
+        function requestSite() {
+            var targetUrl = document.getElementById('urlInput').value;
+            document.getElementById('status').innerHTML = "GitHub robotlari calisiyor... Lutfen bekleyin (30-45 saniye).";
+            alert("İstek GitHub Actions'a iletildi! Arka planda tarayıcı motoru siteyi hazırlıyor.");
+        }
+
+        function checkUpdates() {
+            var nocache = new Date().getTime();
+            var xhr = false;
+            if (window.XMLHttpRequest) {
+                xhr = new XMLHttpRequest();
+            } else if (window.ActiveXObject) {
+                xhr = new ActiveXObject("Microsoft.XMLHTTP");
+            }
+
+            if (xhr) {
+                xhr.open("GET", "config.json?t=" + nocache, true);
+                xhr.onreadystatechange = function() {
+                    if (xhr.readyState == 4 && xhr.status == 200) {
+                        // PS3 uyumlu nesne dönüştürücü (eval)
+                        var data = eval("(" + xhr.responseText + ")");
+                        
+                        if (data.status == "ready") {
+                            document.getElementById('status').innerHTML = "Sayfa Yuklendi! Aktif Site: " + data.current_url;
+                            
+                            var img = document.getElementById('pageImage');
+                            img.src = "page_screenshot.jpg?t=" + nocache;
+                            img.style.display = 'block';
+
+                            var map = document.getElementById('webmap');
+                            map.innerHTML = ""; 
+                            
+                            for (var i = 0; i < data.links.length; i++) {
+                                var link = data.links[i];
+                                var area = document.createElement('area');
+                                area.setAttribute('shape', 'rect');
+                                area.setAttribute('coords', link.left + ',' + link.top + ',' + link.right + ',' + link.bottom);
+                                area.setAttribute('href', "javascript:alert('Bu sisteme gitmek icin config.json dosyasinda target_url degistirin.');");
+                                map.appendChild(area);
+                            }
+
+                            var videoBox = document.getElementById('videoContainer');
+                            var list = document.getElementById('videoList');
+                            if (data.videos && data.videos.length > 0) {
+                                list.innerHTML = "";
+                                for (var j = 0; j < data.videos.length; j++) {
+                                    var vSrc = data.videos[j];
+                                    list.innerHTML += "<li style='margin-bottom:8px;'><a href='" + vSrc + "' target='_blank'><font color='#00FFFF'><b>[ Oynatici Kaynagi #" + (j+1) + " ]</b></font></a></li>";
+                                }
+                                videoBox.style.display = 'block';
+                            } else {
+                                videoBox.style.display = 'none';
+                            }
+                        }
+                    }
+                };
+                xhr.send(null);
+            }
+        }
+
+        startTimer();
+    </script>
+</body>
+</html>

@@ -14,15 +14,20 @@ async function run() {
     });
     
     const page = await browser.newPage();
-    await page.setViewport({ width: 1024, height: 768 }); // PS3 Çözünürlüğü
+    // PS3 ekran genişliği
+    await page.setViewport({ width: 1024, height: 768 }); 
 
     try {
-        await page.goto(targetUrl, { waitUntil: 'networkidle2', timeout: 45000 });
+        // Sayfanın tamamen yüklenmesi için networkidle0 kullandık (Tüm scriptler ve görseller bitsin diye)
+        await page.goto(targetUrl, { waitUntil: 'networkidle0', timeout: 60000 });
+        
+        // PS3 uyumluluğu için biraz bekleyelim sayfa tam otursun
+        await page.waitForTimeout(2000);
 
         const html = await page.content();
         const $ = cheerio.load(html);
 
-        // Gelişmiş Video Ayıklama
+        // Video Ayıklama
         const foundVideos = [];
         $('video').each((i, el) => {
             const src = $(el).find('source').attr('src') || $(el).attr('src');
@@ -35,7 +40,7 @@ async function run() {
             }
         });
 
-        // Link Koordinatlarını Ayıklama
+        // Link Koordinatları
         const linkCoordinates = await page.evaluate(() => {
             return Array.from(document.querySelectorAll('a')).map(link => {
                 const rect = link.getBoundingClientRect();
@@ -49,20 +54,20 @@ async function run() {
             }).filter(l => (l.right - l.left) > 0 && (l.bottom - l.top) > 0);
         });
 
-        // PS3 RAM'i için optimize sıkıştırılmış ekran görüntüsü al
-        await page.screenshot({ path: 'page_screenshot.jpg', type: 'jpeg', quality: 60 });
+        // Kırık görseli engellemek için PNG formatında net screenshot alıyoruz
+        await page.screenshot({ path: 'page_screenshot.png', type: 'png' });
 
-        // config.json'ı güncelle
+        // config.json güncelleme
         config.status = "ready";
         config.current_url = targetUrl;
         config.videos = foundVideos;
         config.links = linkCoordinates;
         fs.writeFileSync('config.json', JSON.stringify(config, null, 2));
 
-        console.log("Sistem başarıyla sonuçları kaydetti.");
+        console.log("Sistem basariyla ekran goruntusunu (PNG) kaydetti.");
 
     } catch (error) {
-        console.error("Hata oluştu:", error.message);
+        console.error("Hata olustu:", error.message);
     } finally {
         await browser.close();
     }

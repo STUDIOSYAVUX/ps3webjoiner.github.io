@@ -1,0 +1,9 @@
+{
+  "name": "ps3-github-proxy",
+  "version": "1.0.0",
+  "main": "scraper.js",
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.12",
+    "puppeteer": "^22.6.0"
+  }
+}
